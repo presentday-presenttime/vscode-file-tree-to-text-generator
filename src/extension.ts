@@ -7,6 +7,16 @@ import { Tree } from './tree';
 
 export function activate(ctx: ExtensionContext) {
   const disposable = commands.registerCommand('extension.fileTreeToText', async (startDir) => {
+    // get the folder right-clicked on, or the folder the current file is in.
+    let dirPath = '';
+    if (startDir) {
+      dirPath = startDir.fsPath;
+    } else {
+      const document = window.activeTextEditor?.document;
+      const filePath = document?.uri?.fsPath as string;
+      dirPath = path.dirname(filePath);
+    }
+
     // get configuration from `settings.json`
     const defaultConfig = workspace.getConfiguration().get('tree-generator.targets') as TreeConfig[];
     const pickerItems = defaultConfig.map((el) => el.picker);
@@ -51,7 +61,7 @@ export function activate(ctx: ExtensionContext) {
       const searchLabel = selected.label;
       const match = defaultConfig.find((el) => el.picker.label === searchLabel);
       if (match) {
-        const basePathBeforeSelection = path.dirname(startDir.fsPath);
+        const basePathBeforeSelection = path.dirname(dirPath);
         const treeRef = new Tree(
           {
             ...match,
@@ -60,12 +70,7 @@ export function activate(ctx: ExtensionContext) {
           },
           exclude,
         );
-        tree = treeRef.getTree(
-          startDir.fsPath,
-          Number(maxDepth),
-          Number(maxFilesPerSubtree),
-          Number(maxDirsPerSubtree),
-        );
+        tree = treeRef.getTree(dirPath, Number(maxDepth), Number(maxFilesPerSubtree), Number(maxDirsPerSubtree));
       }
     }
 
